@@ -9,11 +9,10 @@ fun main(args: Array<String>) {
     val command = args[0]
     when (command) {
         "decode" -> {
-            // Uncomment this block to pass the first stage
-            // val bencodedValue = args[1]
-            // val decoded = decodeBencode(bencodedValue)
-            // println(gson.toJson(decoded))
-            // return
+             val bencodedValue = args[1]
+             val decoded = decodeBencode(bencodedValue)
+             println(gson.toJson(decoded))
+             return
         }
         else -> println("Unknown command $command")
     }
