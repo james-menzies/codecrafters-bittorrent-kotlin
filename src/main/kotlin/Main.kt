@@ -17,15 +17,15 @@ fun main(args: Array<String>) {
     }
 }
 
-fun decodeBencode(bencodedString: String): Any {
-    when {
+fun decodeBencode(bencodedString: String): Any? {
+    return when {
         Character.isDigit(bencodedString[0]) -> {
             val firstColonIndex = bencodedString.indexOfFirst { it == ':' }
             val length = Integer.parseInt(bencodedString.substring(0, firstColonIndex))
-            return bencodedString.substring(firstColonIndex + 1, firstColonIndex + 1 + length)
+            bencodedString.substring(firstColonIndex + 1, firstColonIndex + 1 + length)
         }
         bencodedString[0] == 'i' && bencodedString[bencodedString.length - 1] == 'e' -> {
-            return Integer.parseInt(bencodedString.substring(1, bencodedString.length - 1))
+            bencodedString.substring(1, bencodedString.length - 1).toLongOrNull()
         }
         else -> TODO("Only strings are supported at the moment")
     }
