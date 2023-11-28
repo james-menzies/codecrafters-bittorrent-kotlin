@@ -24,6 +24,9 @@ fun decodeBencode(bencodedString: String): String {
             val length = Integer.parseInt(bencodedString.substring(0, firstColonIndex))
             return bencodedString.substring(firstColonIndex + 1, firstColonIndex + 1 + length)
         }
+        bencodedString[0] == 'i' && bencodedString[bencodedString.length - 1] == 'e' -> {
+            return bencodedString.substring(1, bencodedString.length - 1)
+        }
         else -> TODO("Only strings are supported at the moment")
     }
 }
