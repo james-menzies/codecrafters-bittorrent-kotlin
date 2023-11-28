@@ -1,7 +1,10 @@
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson;
-// import com.dampcake.bencode.Bencode; - available if you need it!
+import java.nio.file.Files
+import java.nio.file.Paths
 
-val gson = Gson()
+
+val mapper = ObjectMapper()
 
 fun main(args: Array<String>) {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -12,6 +15,19 @@ fun main(args: Array<String>) {
              val decoded = decodeBencode(bencodedValue)
              println(gson.toJson(decoded.first))
              return
+        }
+        "info" -> {
+            val filepath = Paths.get(args[1])
+            val data = Files.readAllBytes(filepath)
+            val bencodedValue = data.map { Char(it.toInt() and 0xFF ) }.joinToString("")
+            val decoded = decodeBencode(bencodedValue)
+            val json = gson.toJsonTree(decoded)
+
+            json.asJsonObject.get("announce").let { println("Tracker URL: $it") }
+
+            json.asJsonObject.get("info").let {
+                json.asJsonObject.get("length").let { println("Length: $it")}
+            }
         }
         else -> println("Unknown command $command")
     }
