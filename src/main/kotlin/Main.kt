@@ -40,6 +40,7 @@ fun decodeBencode(bencodedString: String): DecodeResult {
             var remainder: String = bencodedString.substring(1)
 
             while (remainder[0] != 'e') {
+
                 val listContentsResult = decodeBencode(remainder)
                 result.add(listContentsResult.first)
                 remainder = listContentsResult.second
@@ -47,6 +48,20 @@ fun decodeBencode(bencodedString: String): DecodeResult {
             }
             Pair(result, remainder.substring(1))
         }
-        else -> TODO("Only strings, numbers and lists are supported at the moment")
+        bencodedString[0] == 'd' -> {
+            val result = mutableMapOf<String, Any?>()
+            var remainder: String = bencodedString.substring(1)
+
+            while (remainder[0] != 'e') {
+                val decodedKeyResult = decodeBencode(remainder)
+                val decodedValueResult = decodeBencode(decodedKeyResult.second)
+
+                result.put(decodedKeyResult.first.toString(), decodedValueResult.first)
+                remainder = decodedValueResult.second
+            }
+
+            Pair(result, remainder.substring(1))
+        }
+        else -> throw Exception("Unexpected character when parsing payload: $bencodedString[0]")
     }
 }
