@@ -31,7 +31,7 @@ fun main(args: Array<String>) {
         "decode" -> {
             val bencodedValue = args[1]
             val decoded = decodeBencode(bencodedValue)
-            println(mapper.writeValueAsString(decoded))
+            println(mapper.writeValueAsString(decoded.first))
             return
         }
 
