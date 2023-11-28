@@ -10,23 +10,44 @@ fun main(args: Array<String>) {
         "decode" -> {
              val bencodedValue = args[1]
              val decoded = decodeBencode(bencodedValue)
-             println(gson.toJson(decoded))
+             println(gson.toJson(decoded.first))
              return
         }
         else -> println("Unknown command $command")
     }
 }
 
-fun decodeBencode(bencodedString: String): Any? {
+typealias DecodeResult = Pair<*, String>
+
+fun decodeBencode(bencodedString: String): DecodeResult {
     return when {
         Character.isDigit(bencodedString[0]) -> {
             val firstColonIndex = bencodedString.indexOfFirst { it == ':' }
             val length = Integer.parseInt(bencodedString.substring(0, firstColonIndex))
-            bencodedString.substring(firstColonIndex + 1, firstColonIndex + 1 + length)
+            val terminal = firstColonIndex + 1 + length
+            val stringResult = bencodedString.substring(firstColonIndex + 1, terminal)
+            val remainder = bencodedString.substring(terminal)
+            Pair(stringResult, remainder )
         }
-        bencodedString[0] == 'i' && bencodedString[bencodedString.length - 1] == 'e' -> {
-            bencodedString.substring(1, bencodedString.length - 1).toLongOrNull()
+        bencodedString[0] == 'i' -> {
+            val terminal = bencodedString.indexOfFirst { it == 'e' }
+            val integerResult = bencodedString.substring(1, terminal).toLong()
+            val remainder = bencodedString.substring(terminal + 1)
+            Pair(integerResult, remainder)
         }
-        else -> TODO("Only strings are supported at the moment")
+        bencodedString[0] == 'l' -> {
+            val result = mutableListOf<Any?>()
+            var remainder: String = bencodedString.substring(1, bencodedString.length - 1)
+
+            while (remainder.length > 0) {
+
+                val remainderDecodeResult = decodeBencode(remainder)
+                result.add(remainderDecodeResult.first)
+                remainder = remainderDecodeResult.second
+
+            }
+            Pair(result, "")
+        }
+        else -> TODO("Only strings, numbers and lists are supported at the moment")
     }
 }
