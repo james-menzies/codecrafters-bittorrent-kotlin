@@ -37,16 +37,15 @@ fun decodeBencode(bencodedString: String): DecodeResult {
         }
         bencodedString[0] == 'l' -> {
             val result = mutableListOf<Any?>()
-            var remainder: String = bencodedString.substring(1, bencodedString.length - 1)
+            var remainder: String = bencodedString.substring(1)
 
-            while (remainder.length > 0) {
-
-                val remainderDecodeResult = decodeBencode(remainder)
-                result.add(remainderDecodeResult.first)
-                remainder = remainderDecodeResult.second
+            while (remainder[0] != 'e') {
+                val listContentsResult = decodeBencode(remainder)
+                result.add(listContentsResult.first)
+                remainder = listContentsResult.second
 
             }
-            Pair(result, "")
+            Pair(result, remainder.substring(1))
         }
         else -> TODO("Only strings, numbers and lists are supported at the moment")
     }
