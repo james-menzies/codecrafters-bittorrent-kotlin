@@ -1,5 +1,6 @@
 import bencode.decode
 import bencode.encode
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -25,15 +26,15 @@ data class TorrentMetadata(
         @get:JsonProperty("piece length")
         val pieceLength: Long,
 
-        @field:JsonProperty("pieces")
-        private val _pieces: String
+        @get:JsonProperty("pieces")
+        val concatenatedPieces: String
     ) {
 
         @OptIn(ExperimentalStdlibApi::class)
-        val pieces = (0.._pieces.length - 1 step 20).map {
-            _pieces.substring(it, it + 20 ).toByteArray(StandardCharsets.ISO_8859_1).toHexString()
+        @field:JsonIgnore
+        val separatedPieces = (0..concatenatedPieces.length - 1 step 20).map {
+            concatenatedPieces.substring(it, it + 20 ).toByteArray(StandardCharsets.ISO_8859_1).toHexString()
         }
-
     }
 }
 
@@ -68,7 +69,7 @@ fun main(args: Array<String>) {
             println("Info Hash: $infohash")
             println("Piece Length: ${metadata.info.pieceLength}")
             println("Piece Hashes:")
-            metadata.info.pieces.forEach { println(it) }
+            metadata.info.separatedPieces.forEach { println(it) }
 
         }
 
