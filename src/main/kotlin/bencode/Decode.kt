@@ -29,8 +29,7 @@ fun decode(bencoded: ByteArray): DecodeResult {
             // This is just an inconsistency between the bencode format and the Kotlin specification.
             val terminal = bencoded.indexOfFirst { it == e }
             val integerResult =
-                bencoded.sliceArray(IntRange(1, terminal - 1)).let { String(it, StandardCharsets.ISO_8859_1) }
-                    .let { Integer.parseInt(it) }
+                bencoded.sliceArray(IntRange(1, terminal - 1)).let { String(it, StandardCharsets.ISO_8859_1) }.toLong()
 
             val remainder = bencoded.sliceArray(IntRange(terminal + 1, bencoded.size - 1))
             Pair(integerResult, remainder)
