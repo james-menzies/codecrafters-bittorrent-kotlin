@@ -46,7 +46,7 @@ fun decode(bencoded: ByteArray): DecodeResult {
                 remainder = listContentsResult.second
 
             }
-            Pair(result, remainder)
+            Pair(result, remainder.sliceArray(IntRange(1, remainder.size - 1)))
         }
 
         d -> {
@@ -61,7 +61,7 @@ fun decode(bencoded: ByteArray): DecodeResult {
                 remainder = decodedValueResult.second
             }
 
-            Pair(result, remainder)
+            Pair(result, remainder.sliceArray(IntRange(1, remainder.size - 1)))
         }
 
         else -> throw Exception("Unexpected character when parsing payload: ${bencoded[0].toInt().toChar()}")
