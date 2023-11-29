@@ -1,10 +1,12 @@
 import bencode.decode
+import bencode.encode
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.security.MessageDigest
 
 
 val mapper = ObjectMapper().registerKotlinModule()
@@ -14,16 +16,21 @@ data class TorrentMetadata(
     val announce: String,
     val info: TorrentMetadataInfo
 
-){
-   data class TorrentMetadataInfo(
-       val length: Long,
-       val name: String,
+) {
+    data class TorrentMetadataInfo(
+        val length: Long,
+        val name: String,
 
-       @get:JsonProperty("piece length")
-       val pieceLength: String,
-       val pieces: String
-   )
+        @get:JsonProperty("piece length")
+        val pieceLength: Long,
+        val pieces: String
+    )
 }
+
+@OptIn(ExperimentalStdlibApi::class)
+fun generateHash(input: ByteArray): String =
+    MessageDigest.getInstance("SHA-1").digest(input).toHexString()
+
 
 fun main(args: Array<String>) {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -41,8 +48,14 @@ fun main(args: Array<String>) {
             val bencoded = Files.readAllBytes(filepath)
             val decoded = decode(bencoded).first
             val metadata = mapper.convertValue(decoded, TorrentMetadata::class.java)
+
+            val infohash = mapper.convertValue(metadata.info, Map::class.java).let {
+                encode(it)
+            }.let { generateHash(it) }
+
             println("Tracker URL: ${metadata.announce}")
             println("Length: ${metadata.info.length}")
+            println("Info Hash: $infohash")
         }
 
         else -> println("Unknown command $command")

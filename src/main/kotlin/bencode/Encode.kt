@@ -1,5 +1,7 @@
 package bencode
 
+import java.nio.charset.StandardCharsets
+
 fun encode(input: Any): ByteArray {
     val result = mutableListOf<Byte>()
     encodeSegment(input, result)
@@ -24,7 +26,7 @@ private fun encodeSegment(input: Any?, partialResult: MutableList<Byte>) {
             partialResult.add(e)
         }
         is String -> {
-            input.toByteArray().let {
+            input.toByteArray(StandardCharsets.ISO_8859_1).let {
                 val sizeSegment = it.size.toString().toByteArray()
 
                 partialResult.addAll(sizeSegment.toList())
@@ -34,7 +36,7 @@ private fun encodeSegment(input: Any?, partialResult: MutableList<Byte>) {
         }
         is Long -> {
             partialResult.add(i)
-            partialResult.addAll(input.toString().toByteArray().toList())
+            partialResult.addAll(input.toString().toByteArray(StandardCharsets.ISO_8859_1).toList())
             partialResult.add(e)
         }
     }
