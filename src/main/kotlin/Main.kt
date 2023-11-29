@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.MessageDigest
@@ -23,8 +24,17 @@ data class TorrentMetadata(
 
         @get:JsonProperty("piece length")
         val pieceLength: Long,
-        val pieces: String
-    )
+
+        @field:JsonProperty("pieces")
+        private val _pieces: String
+    ) {
+
+        @OptIn(ExperimentalStdlibApi::class)
+        val pieces = (0.._pieces.length - 1 step 20).map {
+            _pieces.substring(it, it + 20 ).toByteArray(StandardCharsets.ISO_8859_1).toHexString()
+        }
+
+    }
 }
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -56,6 +66,10 @@ fun main(args: Array<String>) {
             println("Tracker URL: ${metadata.announce}")
             println("Length: ${metadata.info.length}")
             println("Info Hash: $infohash")
+            println("Piece Length: ${metadata.info.pieceLength}")
+            println("Piece Hashes:")
+            metadata.info.pieces.forEach { println(it) }
+
         }
 
         else -> println("Unknown command $command")
