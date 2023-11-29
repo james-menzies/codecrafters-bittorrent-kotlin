@@ -13,7 +13,7 @@ const val colon: Byte = 0x3A
 
 typealias DecodeResult = Pair<*, ByteArray>
 
-fun decode(bencodedString: String): DecodeResult = decode(bencodedString.toByteArray())
+fun decode(bencoded: String): DecodeResult = decode(bencoded.toByteArray())
 fun decode(bencoded: ByteArray): DecodeResult {
 
     return when (bencoded[0]) {
