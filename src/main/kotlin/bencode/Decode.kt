@@ -8,8 +8,7 @@ fun decode(bencoded: String): Any? = decode(bencoded.toByteArray())
 fun decode(bencoded: ByteArray): Any? {
 
     val result = decodeSegment(bencoded)
-
-    if (result.second.size > 0) {
+    if (result.second.size > 0 && result.second[0].toInt() != 0) {
         throw Exception("Could not parse bencoded string. Input has more than one root element.")
     }
 

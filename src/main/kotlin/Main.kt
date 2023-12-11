@@ -64,7 +64,7 @@ fun main(args: Array<String>) {
                 }
             }
 
-            decode(response.body).let { TrackerResponse.fromDecoded(it).peers }.forEach {
+            decode(response.body).let { TrackerResponse.fromDecoded(it as Map<*, *>).peers }.forEach {
                 println(it)
             }
         }
