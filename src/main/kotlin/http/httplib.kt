@@ -1,13 +1,44 @@
 package http
 
-import java.net.URI
+import java.net.HttpURLConnection
 
 
-fun uri(domain: String, init: URL.() -> Unit): URI {
+fun request(init: Request.() -> Unit): Response {
 
-    val url = URL(domain);
-    url.init();
-    return URI(url.toString())
+    val request = Request()
+    request.init()
+    return request.send()
+}
+
+
+data class Response(
+    val code: Int,
+    val body: ByteArray
+)
+
+class Request {
+    var method = "GET"
+
+    private lateinit var url: String
+    fun uri(domain: String, init: URL.() -> Unit) {
+        val url = URL(domain);
+        url.init();
+        this.url = url.toString()
+    }
+
+    fun send(): Response {
+        val conn = java.net.URL(url).openConnection() as HttpURLConnection
+        val input = conn.inputStream
+        val buffer = ByteArray(2048)
+
+        val body = buildList<Byte> {
+            while (input.read(buffer) != -1) {
+                this.addAll(buffer.toList())
+            }
+        }.toByteArray()
+
+        return Response(conn.responseCode, body)
+    }
 }
 
 
