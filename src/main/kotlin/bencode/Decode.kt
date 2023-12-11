@@ -8,7 +8,7 @@ fun decode(bencoded: String): Any? = decode(bencoded.toByteArray())
 fun decode(bencoded: ByteArray): Any? {
 
     val result = decodeSegment(bencoded)
-    if (result.second.size > 0 && result.second[0].toInt() != 0) {
+    if (result.second.isNotEmpty() && result.second[0].toInt() != 0) {
         throw Exception("Could not parse bencoded string. Input has more than one root element.")
     }
 
@@ -22,9 +22,7 @@ private fun decodeSegment(bencoded: ByteArray): DecodeResult {
     return when (bencoded[0]) {
         in digit0..digit9 -> { // is a digit
             val firstColonIndex = bencoded.indexOfFirst { it == colon }
-            val length = bencoded.sliceArray(IntRange(0, firstColonIndex - 1)).let {
-                String(it, StandardCharsets.ISO_8859_1)
-            }.let {
+            val length = String(bencoded.sliceArray(IntRange(0, firstColonIndex - 1)), StandardCharsets.ISO_8859_1).let {
                 Integer.parseInt(it)
             }
 
@@ -38,13 +36,12 @@ private fun decodeSegment(bencoded: ByteArray): DecodeResult {
             val remainder = bencoded.sliceArray(IntRange(terminal + 1, bencoded.size - 1))
             Pair(stringResult, remainder)
         }
-
         i -> {
             // integers are a bit weird in this context, because they should be able to store long values.
             // This is just an inconsistency between the bencode format and the Kotlin specification.
             val terminal = bencoded.indexOfFirst { it == e }
             val integerResult =
-                bencoded.sliceArray(IntRange(1, terminal - 1)).let { String(it, StandardCharsets.ISO_8859_1) }.toLong()
+                String(bencoded.sliceArray(IntRange(1, terminal - 1)), StandardCharsets.ISO_8859_1).toLong()
 
             val remainder = bencoded.sliceArray(IntRange(terminal + 1, bencoded.size - 1))
             Pair(integerResult, remainder)
@@ -72,7 +69,7 @@ private fun decodeSegment(bencoded: ByteArray): DecodeResult {
                 val decodedKeyResult = decodeSegment(remainder)
                 val decodedValueResult = decodeSegment(decodedKeyResult.second)
 
-                result.put(decodedKeyResult.first.toString(), decodedValueResult.first)
+                result[decodedKeyResult.first.toString()] = decodedValueResult.first
                 remainder = decodedValueResult.second
             }
 
