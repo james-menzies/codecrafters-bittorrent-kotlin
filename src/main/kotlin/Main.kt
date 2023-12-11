@@ -6,8 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import http.uri
-import java.net.Inet4Address
-import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -50,25 +48,22 @@ data class TrackerResponse(
     val interval: Long,
 
     @get:JsonProperty("peers")
-    val concatenatedPeers: String
+    val concatenatedPeers: ByteArray
 ) {
 
     @field:JsonIgnore
-    val separatedPeers = (0..2).map {
+    val separatedPeers = (0..<concatenatedPeers.size step 6).map {
         Peer(
-            concatenatedPeers.substring(it, it + 4).map { it.code.toString() }.joinToString("."),
-            ((concatenatedPeers[it + 4].code shl 8) + concatenatedPeers[it + 5].code).toShort()
+            concatenatedPeers.sliceArray(IntRange(it, it + 3)).map { it.toUByte() }.joinToString("."),
+            ((concatenatedPeers[it + 4].toUByte().toInt() shl 8) + concatenatedPeers[it + 5].toUByte().toInt())
         )
     }
 
     data class Peer(
         val ip: String,
-        val short: Short
+        val port: Int
     )
 }
-
-
-
 
 @OptIn(ExperimentalStdlibApi::class)
 fun main(args: Array<String>) {
@@ -133,13 +128,16 @@ fun main(args: Array<String>) {
                 .GET()
                 .build()
 
-            val response = client.send(request, HttpResponse.BodyHandlers.ofString()).body().let{
-                decode(it)
+            val response = client.send(request, HttpResponse.BodyHandlers.ofByteArray()).body().let{
+                decode(it).first
             }.let {
                 mapper.convertValue(it, TrackerResponse::class.java)
             }
 
-            println()
+            for (i in response.separatedPeers.indices) {
+
+                println("${response.separatedPeers[i].ip}:${response.separatedPeers[i].port}")
+            }
 
 
         }
