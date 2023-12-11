@@ -80,7 +80,7 @@ fun main(args: Array<String>) {
         "decode" -> {
             val bencodedValue = args[1]
             val decoded = decode(bencodedValue)
-            Gson().toJson(decoded)
+            println(Gson().toJson(decoded.first))
             return
         }
 
