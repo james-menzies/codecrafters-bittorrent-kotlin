@@ -2,34 +2,23 @@ package bencode
 
 import java.nio.charset.StandardCharsets
 
-typealias DecodeResult = Pair<*, ByteArray>
 
-fun isUtf8String(bytes: ByteArray): Boolean {
+fun decode(bencoded: String): Any? = decode(bencoded.toByteArray())
 
-    var remainingBytes = 0
+fun decode(bencoded: ByteArray): Any? {
 
-    for (i in bytes.indices) {
+    val result = decodeSegment(bencoded)
 
-        val current = bytes[i].toInt()
-
-        if (remainingBytes > 0) {
-            if (current shr 6 != 0b10) return false
-            remainingBytes--
-        } else when {
-            current shr 7 == 0 -> {}
-            current shr 5 == 0b110 -> remainingBytes = 1
-            current shr 4 == 0b1110 -> remainingBytes = 2
-            current shr 3 == 0b11110 -> remainingBytes = 3
-            else -> return false
-        }
+    if (result.second.size > 0) {
+        throw Exception("Could not parse bencoded string. Input has more than one root element.")
     }
 
-    return remainingBytes == 0
+    return result.first
 }
 
 
-fun decode(bencoded: String): DecodeResult = decode(bencoded.toByteArray())
-fun decode(bencoded: ByteArray): DecodeResult {
+typealias DecodeResult = Pair<*, ByteArray>
+private fun decodeSegment(bencoded: ByteArray): DecodeResult {
 
     return when (bencoded[0]) {
         in digit0..digit9 -> { // is a digit
@@ -68,7 +57,7 @@ fun decode(bencoded: ByteArray): DecodeResult {
 
             while (remainder[0] != e) {
 
-                val listContentsResult = decode(remainder)
+                val listContentsResult = decodeSegment(remainder)
                 result.add(listContentsResult.first)
                 remainder = listContentsResult.second
 
@@ -81,8 +70,8 @@ fun decode(bencoded: ByteArray): DecodeResult {
             var remainder = bencoded.sliceArray(IntRange(1, bencoded.size - 1))
 
             while (remainder[0] != e) {
-                val decodedKeyResult = decode(remainder)
-                val decodedValueResult = decode(decodedKeyResult.second)
+                val decodedKeyResult = decodeSegment(remainder)
+                val decodedValueResult = decodeSegment(decodedKeyResult.second)
 
                 result.put(decodedKeyResult.first.toString(), decodedValueResult.first)
                 remainder = decodedValueResult.second
