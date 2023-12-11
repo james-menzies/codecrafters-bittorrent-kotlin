@@ -4,6 +4,30 @@ import java.nio.charset.StandardCharsets
 
 typealias DecodeResult = Pair<*, ByteArray>
 
+fun isUtf8String(bytes: ByteArray): Boolean {
+
+    var remainingBytes = 0
+
+    for (i in bytes.indices) {
+
+        val current = bytes[i].toInt()
+
+        if (remainingBytes > 0) {
+            if (current shr 6 != 0b10) return false
+            remainingBytes--
+        } else when {
+            current shr 7 == 0 -> {}
+            current shr 5 == 0b110 -> remainingBytes = 1
+            current shr 4 == 0b1110 -> remainingBytes = 2
+            current shr 3 == 0b11110 -> remainingBytes = 3
+            else -> return false
+        }
+    }
+
+    return remainingBytes == 0
+}
+
+
 fun decode(bencoded: String): DecodeResult = decode(bencoded.toByteArray())
 fun decode(bencoded: ByteArray): DecodeResult {
 
@@ -18,7 +42,10 @@ fun decode(bencoded: ByteArray): DecodeResult {
 
             val terminal = firstColonIndex + length
             val stringResult =
-                bencoded.sliceArray(IntRange(firstColonIndex + 1, terminal)).let { String(it, StandardCharsets.ISO_8859_1) }
+                bencoded.sliceArray(IntRange(firstColonIndex + 1, terminal)).let {
+                    // We just want to leave this string as a byte array if it cannot be parsed into UTF-8
+                    if (isUtf8String(it)) String(it, StandardCharsets.UTF_8) else it
+                }
 
             val remainder = bencoded.sliceArray(IntRange(terminal + 1, bencoded.size - 1))
             Pair(stringResult, remainder)

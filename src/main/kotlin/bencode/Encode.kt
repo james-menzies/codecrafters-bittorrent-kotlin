@@ -25,6 +25,16 @@ private fun encodeSegment(input: Any?, partialResult: MutableList<Byte>) {
             input.forEach { encodeSegment(it, partialResult) }
             partialResult.add(e)
         }
+        is ByteArray -> {
+
+            val sizeSegment = input.size.toString().toByteArray()
+
+            partialResult.addAll(sizeSegment.toList())
+            partialResult.add(colon)
+            for (i in input.indices) {
+                partialResult.add(input[i])
+            }
+        }
         is String -> {
             input.toByteArray(StandardCharsets.ISO_8859_1).let {
                 val sizeSegment = it.size.toString().toByteArray()
