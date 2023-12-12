@@ -24,7 +24,7 @@ fun main(args: Array<String>) {
             val torrentMetadata = loadTorrent(Paths.get(args[1]))
             println("Tracker URL: ${torrentMetadata.announce}")
             println("Length: ${torrentMetadata.info.length}")
-            println("Info Hash: ${torrentMetadata.infohash}")
+            println("Info Hash: ${torrentMetadata.infohashHex}")
             println("Piece Length: ${torrentMetadata.info.pieceLength}")
             println("Piece Hashes:")
             torrentMetadata.info.pieces.forEach { println(it) }
