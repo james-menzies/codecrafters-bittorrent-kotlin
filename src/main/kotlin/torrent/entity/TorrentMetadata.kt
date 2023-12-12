@@ -1,4 +1,4 @@
-package entity
+package torrent.entity
 
 import bencode.encode
 import bencode.urlEncode

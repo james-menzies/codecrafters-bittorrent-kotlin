@@ -1,4 +1,4 @@
-package entity
+package torrent.entity
 
 data class TrackerResponse(
     val interval: Long,
