@@ -3,11 +3,13 @@ import com.google.gson.Gson
 import entity.TorrentMetadata
 import entity.TrackerResponse
 import http.request
+import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
 
+@OptIn(ExperimentalStdlibApi::class)
 fun main(args: Array<String>) {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     when (val command = args[0]) {
@@ -32,6 +34,41 @@ fun main(args: Array<String>) {
             val torrentMetadata = loadTorrent(Paths.get(args[1]))
             val trackerInfo = loadTrackerInfo(torrentMetadata)
             trackerInfo.peers.forEach { println(it) }
+        }
+
+        "handshake" -> {
+            val torrentMetadata = loadTorrent(Paths.get(args[1]))
+            val handshakeHeader = "BitTorrent protocol"
+            val peerId = "00112233445566778899"
+
+            val handshakePayload = ByteArray(68)
+            handshakePayload[0] = 19
+
+            for (i in handshakeHeader.indices) {
+                handshakePayload[i + 1] = handshakeHeader[i].code.toByte()
+            }
+
+            for (i in torrentMetadata.infohash.indices) {
+                handshakePayload[i + 28] = torrentMetadata.infohash[i]
+            }
+
+            for (i in peerId.indices) {
+                handshakePayload[i + 48] = peerId[i].code.toByte()
+            }
+
+            val inputBuffer = ByteArray(1024)
+
+            val (ipAddress, portNumber) = args[2].split(':')
+            val clientSocket = Socket(ipAddress, Integer.parseInt(portNumber))
+            val outputStream = clientSocket.getOutputStream()
+            outputStream.write(handshakePayload)
+            outputStream.flush()
+            val inputStream = clientSocket.getInputStream()
+
+            inputStream.read(inputBuffer)
+
+            val serverPeerId = inputBuffer.sliceArray(IntRange(48, 67)).toHexString()
+            println("Peer ID: $serverPeerId")
         }
 
         else -> println("Unknown command $command")
