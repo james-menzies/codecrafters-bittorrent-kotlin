@@ -1,7 +1,7 @@
 package torrent.entity
 
 import bencode.encode
-import bencode.urlEncode
+import urlEncode
 import java.security.MessageDigest
 
 @OptIn(ExperimentalStdlibApi::class)

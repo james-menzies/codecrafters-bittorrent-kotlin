@@ -2,7 +2,7 @@ package torrent.entity
 
 data class TrackerResponse(
     val interval: Long,
-    val peers: List<String>
+    val peers: List<NetworkLocation>
 ) {
     companion object {
         fun fromDecoded(input: Map<*, *>): TrackerResponse {
@@ -13,10 +13,10 @@ data class TrackerResponse(
                         val ipAddress =
                             peers.sliceArray(IntRange(peersIndex, peersIndex + 3)).map { it.toUByte() }
                                 .joinToString(".")
-                        val port =
+                        val portNumber =
                             ((peers[peersIndex + 4].toUByte().toInt() shl 8) + peers[peersIndex + 5].toUByte()
                                 .toInt())
-                        "$ipAddress:$port"
+                        NetworkLocation(ipAddress, portNumber)
                     }
 
 
@@ -25,3 +25,5 @@ data class TrackerResponse(
         }
     }
 }
+
+data class NetworkLocation (val ipAddress: String, val portNumber: Int)

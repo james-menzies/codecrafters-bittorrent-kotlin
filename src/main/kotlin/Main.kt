@@ -1,6 +1,7 @@
 import bencode.decode
+import bencode.encode
 import com.google.gson.Gson
-import tcp.handshakeWithPeer
+import tcp.performUtpHandshake
 import torrent.Torrent
 import java.net.Socket
 import java.nio.file.Paths
@@ -35,21 +36,17 @@ fun main(args: Array<String>) {
             val torrent = Torrent.loadFromFile(Paths.get(args[1]))
             val (ipAddress, portNumber) = args[2].split(':')
             val socket = Socket(ipAddress, Integer.parseInt(portNumber))
-            val peerId = handshakeWithPeer(socket, torrent.metadata.infohash)
+            val peerId = performUtpHandshake(socket, torrent.metadata.infohash)
             println("Peer ID: $peerId")
             socket.close()
         }
         "download_piece" -> {
             val destinationPath = Paths.get(args[2])
             val torrentFilePath = Paths.get(args[3])
-            val pieceNumber = Integer.parseInt(args[4])
+            val pieceNumber = args[4].toInt()
 
             val torrent = Torrent.loadFromFile(torrentFilePath)
-            val (ipAddress, portNumber) = torrent.trackerInfo.peers[0].split(':')
-//            val peerId = torrent.handshakeWithPeer(ipAddress, Integer.parseInt(portNumber))
-//            val result = torrent.downloadPieceFromPeer(peerId)
-
-            torrent.closeAllConnections()
+            val piece = torrent.downloadPiece(pieceNumber)
 
         }
 

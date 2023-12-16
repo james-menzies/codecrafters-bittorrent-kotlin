@@ -1,5 +1,3 @@
-package bencode
-
 fun isUtf8String(bytes: ByteArray): Boolean {
 
     var remainingBytes = 0
@@ -37,4 +35,11 @@ fun urlEncode(bytes: ByteArray): String {
         charArray[i * 3 + 2] = hexArray[currentValue and 0x0F]
     }
     return String(charArray)
+}
+
+fun ByteArray.insert(value: Int, offset: Int) {
+    for (i in 0..<4) {
+        val shifted = value shr (8 * i) and 0xFF
+        this[offset + 3 - i] = shifted.toByte()
+    }
 }

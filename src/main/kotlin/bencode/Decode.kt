@@ -1,5 +1,6 @@
 package bencode
 
+import isUtf8String
 import java.nio.charset.StandardCharsets
 
 
