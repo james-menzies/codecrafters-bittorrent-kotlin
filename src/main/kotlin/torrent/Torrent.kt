@@ -7,6 +7,7 @@ import torrent.entity.TrackerResponse
 import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.MessageDigest
 
 
 class Torrent private constructor(val metadata: TorrentMetadata) {
@@ -34,21 +35,34 @@ class Torrent private constructor(val metadata: TorrentMetadata) {
         decode(response.body).let { TrackerResponse.fromDecoded(it as Map<*, *>) }
     }
 
-    fun downloadPiece(pieceNumber: Int): String? {
+    @OptIn(ExperimentalStdlibApi::class)
+    fun downloadPiece(pieceNumber: Int): ByteArray? {
         val networkLocation = trackerInfo.peers[0]
         val socket = Socket(networkLocation.ipAddress, networkLocation.portNumber)
-        var lastReceivedMessage: UtpMessage?
-        performUtpHandshake(socket, metadata.infohash)
+        socket.use {
+            performUtpHandshake(it, metadata.infohash)
 
-        lastReceivedMessage = receiveUtpMessage(socket)
-        sendUtpMessage(socket, UtpMessage(2, ByteArray(0)))
-        lastReceivedMessage = receiveUtpMessage(socket)
-        sendUtpRequest(socket, pieceNumber, 0, 16 * 1024)
-        lastReceivedMessage = receiveUtpMessage(socket)
+            receiveUtpMessage(it)
+            sendUtpMessage(it, UtpMessage(2, ByteArray(0)))
+            receiveUtpMessage(it)
+
+            val packetSize: Long = 16 * 1024 // 16 kB
+            val result = mutableListOf<Byte>()
+            var lastReceivedMessage: UtpMessage?
+            for (begin in 0..<metadata.info.pieceLength step packetSize) {
+                val length = if (begin + packetSize > metadata.info.pieceLength) {
+                    metadata.info.pieceLength - begin
+                } else packetSize
+
+                sendUtpRequest(it, pieceNumber, begin.toInt(), length.toInt())
+                receiveUtpMessage(it)?.payload?.forEach { result.add(it) }
+            }
 
 
+            val correctHash = metadata.info.pieces[pieceNumber]
+            val unverifiedHash = MessageDigest.getInstance("SHA-1").digest(result.toByteArray()).toHexString()
 
-        socket.close()
-        return null
+            return if (correctHash == unverifiedHash) result.toByteArray() else null
+        }
     }
 }

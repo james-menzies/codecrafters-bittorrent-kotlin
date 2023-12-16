@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import tcp.performUtpHandshake
 import torrent.Torrent
 import java.net.Socket
+import java.nio.file.Files
 import java.nio.file.Paths
 
 
@@ -41,13 +42,19 @@ fun main(args: Array<String>) {
             socket.close()
         }
         "download_piece" -> {
-            val destinationPath = Paths.get(args[2])
             val torrentFilePath = Paths.get(args[3])
+            val destinationPath = Paths.get(args[2])
             val pieceNumber = args[4].toInt()
-
             val torrent = Torrent.loadFromFile(torrentFilePath)
             val piece = torrent.downloadPiece(pieceNumber)
 
+            if (piece == null) {
+                println("Could not verify hash for Piece $pieceNumber")
+                return
+            }
+
+            Files.write(destinationPath, piece)
+            println("Piece $pieceNumber downloaded to $destinationPath")
         }
 
         else -> println("Unknown command $command")

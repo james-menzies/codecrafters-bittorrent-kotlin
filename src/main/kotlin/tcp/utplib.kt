@@ -63,9 +63,9 @@ fun receiveUtpMessage(socket: Socket): UtpMessage? {
 
         val inputBuffer = ByteArray(size - 1) // exclude byte that contains message type
         if(size > 1) {
-            inputStream.read(inputBuffer)
+            inputStream.readFully(inputBuffer)
         }
-        UtpMessage(type, inputBuffer)
+        UtpMessage(type, inputBuffer.sliceArray(IntRange(8, inputBuffer.size - 1)))
     } catch (e: Exception) {
         println("Could not receive message")
         null
