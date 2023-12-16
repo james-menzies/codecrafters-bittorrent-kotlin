@@ -37,6 +37,15 @@ class Torrent private constructor(val metadata: TorrentMetadata) {
 
     @OptIn(ExperimentalStdlibApi::class)
     fun downloadPiece(pieceNumber: Int): ByteArray? {
+
+        // Calculate Piece length
+        val beginningIndex = pieceNumber * metadata.info.pieceLength
+        val remainingBytes = metadata.info.length - beginningIndex
+        if (remainingBytes <= 0) return null // invalid piece number
+
+        val pieceLength = Math.min(remainingBytes, metadata.info.pieceLength)
+
+
         val networkLocation = trackerInfo.peers[0]
         val socket = Socket(networkLocation.ipAddress, networkLocation.portNumber)
         socket.use {
@@ -48,14 +57,13 @@ class Torrent private constructor(val metadata: TorrentMetadata) {
 
             val packetSize: Long = 16 * 1024 // 16 kB
             val result = mutableListOf<Byte>()
-            var lastReceivedMessage: UtpMessage?
-            for (begin in 0..<metadata.info.pieceLength step packetSize) {
-                val length = if (begin + packetSize > metadata.info.pieceLength) {
-                    metadata.info.pieceLength - begin
+            for (begin in 0..<pieceLength step packetSize) {
+                val length = if (begin + packetSize > pieceLength) {
+                    pieceLength - begin
                 } else packetSize
 
                 sendUtpRequest(it, pieceNumber, begin.toInt(), length.toInt())
-                receiveUtpMessage(it)?.payload?.forEach { result.add(it) }
+                receiveUtpMessage(it)?.payload?.forEach { message -> result.add(message) }
             }
 
 
