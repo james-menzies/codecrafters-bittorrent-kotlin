@@ -26,4 +26,6 @@ data class TrackerResponse(
     }
 }
 
-data class NetworkLocation (val ipAddress: String, val portNumber: Int)
+data class NetworkLocation (val ipAddress: String, val portNumber: Int) {
+    override fun toString() = "$ipAddress:$portNumber"
+}
