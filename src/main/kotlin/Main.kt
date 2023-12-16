@@ -6,6 +6,7 @@ import torrent.Torrent
 import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -55,6 +56,24 @@ fun main(args: Array<String>) {
 
             Files.write(destinationPath, piece)
             println("Piece $pieceNumber downloaded to $destinationPath")
+        }
+        "download" -> {
+            val torrentFilePath = Paths.get(args[3])
+            val destinationPath = Paths.get(args[2])
+            val torrent = Torrent.loadFromFile(torrentFilePath)
+
+            if (!Files.exists(destinationPath)) Files.createFile(destinationPath)
+
+            for (i in torrent.metadata.info.pieces.indices) {
+                var piece: ByteArray? = null
+                while (piece == null) {
+                    piece = torrent.downloadPiece(i)
+                }
+
+                Files.write(destinationPath, piece, StandardOpenOption.APPEND)
+            }
+
+            println("Downloaded $torrentFilePath to $destinationPath.")
         }
 
         else -> println("Unknown command $command")
