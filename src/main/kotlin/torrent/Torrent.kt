@@ -1,7 +1,8 @@
 package torrent
 
 import bencode.decode
-import http.request
+import tcp.PEER_ID
+import tcp.request
 import torrent.entity.TorrentMetadata
 import torrent.entity.TrackerResponse
 import java.lang.Exception
@@ -9,8 +10,6 @@ import java.net.Socket
 import java.nio.file.Files
 import java.nio.file.Path
 
-private const val PEER_ID = "00112233445566778899"
-private const val HANDSHAKE_HEADER = "BitTorrent protocol"
 
 class Torrent private constructor(val metadata: TorrentMetadata) {
 
@@ -41,41 +40,59 @@ class Torrent private constructor(val metadata: TorrentMetadata) {
         decode(response.body).let { TrackerResponse.fromDecoded(it as Map<*, *>) }
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
-    fun handshakeWithPeer(ipAddress: String, port: Int): String {
 
-        val handshakePayload = ByteArray(68)
-        handshakePayload[0] = 19
+    fun downloadPieceFromPeer(peerId: String): String? {
+        var lastMessage = receiveMessage(peerId)
+        sendMessage(peerId, Message(2, ByteArray(0)))
+        lastMessage = receiveMessage(peerId)
+        println(lastMessage)
+        return null
+    }
 
-        for (i in HANDSHAKE_HEADER.indices) {
-            handshakePayload[i + 1] = HANDSHAKE_HEADER[i].code.toByte()
-        }
+    data class Message(val typeId: Int, val payload: ByteArray)
 
-        for (i in metadata.infohash.indices) {
-            handshakePayload[i + 28] = metadata.infohash[i]
-        }
-
-        for (i in PEER_ID.indices) {
-            handshakePayload[i + 48] = PEER_ID[i].code.toByte()
-        }
+    private fun receiveMessage(peerId: String): Message? {
+        val socket = connections[peerId]
+        if (socket == null) return null
 
         val inputBuffer = ByteArray(1024)
-
-        val clientSocket = Socket(ipAddress, port)
-
         try {
-            val outputStream = clientSocket.getOutputStream()
-            outputStream.write(handshakePayload)
-            outputStream.flush()
-            val inputStream = clientSocket.getInputStream()
-
+            val inputStream = socket.getInputStream()
             inputStream.read(inputBuffer)
         } catch (e: Exception) {
-            clientSocket.close()
+            socket.close()
+            connections.remove(peerId)
+            return null
         }
 
-        val externalPeerId =  inputBuffer.sliceArray(IntRange(48, 67)).toHexString()
-        connections[externalPeerId] = clientSocket
-        return externalPeerId
+        return Message(inputBuffer[4].toInt(), ByteArray(0))
+    }
+
+    private fun sendMessage(peerId: String, message: Message) {
+
+        val messagePayload = ByteArray(5 + message.payload.size)
+
+        val sizeSegment = message.payload.size + 1 // the byte containing type ID is included in the message length.
+
+        for (i in 0..<4) {
+            val shifted = sizeSegment shr (8 * i) and 0xFF
+            messagePayload[3 - i] = shifted.toByte()
+        }
+        messagePayload[4] = message.typeId.toByte()
+        for (i in message.payload.indices) {
+            messagePayload[5 + i] = message.payload[i]
+        }
+
+        val socket = connections[peerId]
+        if (socket == null) return
+
+        try {
+            val inputStream = socket.getOutputStream()
+            inputStream.write(messagePayload)
+        } catch (e: Exception) {
+            socket.close()
+            connections.remove(peerId)
+        }
+
     }
 }

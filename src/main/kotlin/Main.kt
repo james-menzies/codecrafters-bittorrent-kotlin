@@ -1,6 +1,8 @@
 import bencode.decode
 import com.google.gson.Gson
+import tcp.handshakeWithPeer
 import torrent.Torrent
+import java.net.Socket
 import java.nio.file.Paths
 
 
@@ -30,11 +32,25 @@ fun main(args: Array<String>) {
             torrent.trackerInfo.peers.forEach { println(it) }
         }
         "handshake" -> {
-            val (ipAddress, portNumber) = args[2].split(':')
             val torrent = Torrent.loadFromFile(Paths.get(args[1]))
-            val peerId = torrent.handshakeWithPeer(ipAddress, Integer.parseInt(portNumber))
-            torrent.closeAllConnections()
+            val (ipAddress, portNumber) = args[2].split(':')
+            val socket = Socket(ipAddress, Integer.parseInt(portNumber))
+            val peerId = handshakeWithPeer(socket, torrent.metadata.infohash)
             println("Peer ID: $peerId")
+            socket.close()
+        }
+        "download_piece" -> {
+            val destinationPath = Paths.get(args[2])
+            val torrentFilePath = Paths.get(args[3])
+            val pieceNumber = Integer.parseInt(args[4])
+
+            val torrent = Torrent.loadFromFile(torrentFilePath)
+            val (ipAddress, portNumber) = torrent.trackerInfo.peers[0].split(':')
+//            val peerId = torrent.handshakeWithPeer(ipAddress, Integer.parseInt(portNumber))
+//            val result = torrent.downloadPieceFromPeer(peerId)
+
+            torrent.closeAllConnections()
+
         }
 
         else -> println("Unknown command $command")
