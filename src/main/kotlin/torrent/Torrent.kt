@@ -43,7 +43,8 @@ class Torrent private constructor(val metadata: TorrentMetadata) {
         val remainingBytes = metadata.info.length - beginningIndex
         if (remainingBytes <= 0) return null // invalid piece number
 
-        val pieceLength = Math.min(remainingBytes, metadata.info.pieceLength)
+
+        val pieceLength = remainingBytes.coerceAtMost(metadata.info.pieceLength)
 
 
         val networkLocation = trackerInfo.peers[0]
@@ -51,9 +52,9 @@ class Torrent private constructor(val metadata: TorrentMetadata) {
         socket.use {
             performUtpHandshake(it, metadata.infohash)
 
-            receiveUtpMessage(it)
+            receiveUtpMessage(it) // This will be the bitfield message, we can throw this away because we know the peer has all of the bits.
             sendUtpMessage(it, UtpMessage(2, ByteArray(0)))
-            receiveUtpMessage(it)
+            receiveUtpMessage(it) // We know that the next message will be the unchoke.
 
             val packetSize: Long = 16 * 1024 // 16 kB
             val result = mutableListOf<Byte>()
@@ -63,7 +64,11 @@ class Torrent private constructor(val metadata: TorrentMetadata) {
                 } else packetSize
 
                 sendUtpRequest(it, pieceNumber, begin.toInt(), length.toInt())
-                receiveUtpMessage(it)?.payload?.forEach { message -> result.add(message) }
+                receiveUtpMessage(it)?.payload?.let { payload ->
+                    // We can ignore the first 8 bytes because they provide the piece number and index of insertion.
+                    // Since we're going bit-by-bit, we already know this.
+                    payload.sliceArray(IntRange(8, payload.size - 1)).forEach { byte -> result.add(byte) }
+                }
             }
 
 

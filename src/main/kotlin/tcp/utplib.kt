@@ -65,7 +65,7 @@ fun receiveUtpMessage(socket: Socket): UtpMessage? {
         if(size > 1) {
             inputStream.readFully(inputBuffer)
         }
-        UtpMessage(type, inputBuffer.sliceArray(IntRange(8, inputBuffer.size - 1)))
+        UtpMessage(type, inputBuffer)
     } catch (e: Exception) {
         println("Could not receive message")
         null
